@@ -1,0 +1,15 @@
+notes:
+
+- i removed a bunch of the styling. no real reason for this. most stuff was unneeded
+
+- opponent hp's are given in percentages whereas allied HP's are given in exact numbers, as per the client.
+
+- supereffective is very annoying. can just look this up? or parse from replay?
+
+- a line-by-line view: is HP percentages translated well enough?
+- line by line parsing: effective or ineffective? what stuff do we not know about well enough?
+
+- leech seed
+- weather
+- spikes and other hazards?
+- stat boosts?
