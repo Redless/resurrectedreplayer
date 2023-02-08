@@ -3,6 +3,8 @@ import logging
 
 def generateHTML(log, p1name, p2name, p1mons, p2mons):
     p1hps = {mon[0]: 100 for mon in p1mons}
+    p1tox = 1
+    p2tox = 1
     p1statuses = {mon[0]: "" for mon in p1mons}
     p2hps = {mon[0]: 100 for mon in p2mons}
     p2statuses = {mon[0]: "" for mon in p2mons}
@@ -54,8 +56,10 @@ def generateHTML(log, p1name, p2name, p1mons, p2mons):
                 nickswitchedin = p1nicktospecies if isp1 else p2nicktospecies
                 if isp1:
                     p1active = monname
+                    p1tox = 1
                 else:
                     p2active = monname
+                    p2tox = 1
                 out.append("|switch|"+player+": "+monname+"|"+nickswitchedin[monname]+"|"+str(hpswitchedin[monname])+"\/100 "+statusswitchedin[monname])
             elif " used " in line:
                 parsed = line.split(" used ")
@@ -76,6 +80,16 @@ def generateHTML(log, p1name, p2name, p1mons, p2mons):
                 else:
                     p2statuses[parsed[1]] = "slp"
                 out.append("|-status|"+player+": "+parsed[1]+"|slp|")
+            elif " was badly poisoned!" in line:
+                parsed = line.split(" was badly poisoned!")
+                parsed = parsed[0].split("'s ")
+                isp1 = parsed[0] == p1name
+                player = "p1a" if isp1 else "p2a"
+                if isp1:
+                    p1statuses[parsed[1]] = "tox"
+                else:
+                    p2statuses[parsed[1]] = "tox"
+                out.append("|-status|"+player+": "+parsed[1]+"|tox|")
             elif "Spikes were scattered all around the feet of " in line:
                 target = line.split("Spikes were scattered all around the feet of ")[1].split("'s team!")[0]
                 isp1 = target == p1name
@@ -83,6 +97,21 @@ def generateHTML(log, p1name, p2name, p1mons, p2mons):
                     out.append("|-sidestart|p1: "+p1name+"|Spikes")
                 else:
                     out.append("|-sidestart|p2: "+p2name+"|Spikes")
+            elif " was hurt by poison!" in line:
+                parsed = line.split(" was hurt by poison!")[0].split("'s ")
+                isp1 = parsed[0] == p1name
+                if isp1:
+                    poisondamage = p1tox
+                    p1tox += 1
+                else:
+                    poisondamage = p2tox
+                    p2tox += 1
+                player = "p1a" if isp1 else "p2a"
+                hps = p1hps if isp1 else p2hps
+                newhp = max(hps[parsed[1]] - 6*poisondamage,0)
+                hps[parsed[1]] = newhp
+                statusdict = p1statuses if isp1 else p2statuses
+                out.append("|-damage|"+player+": "+parsed[1]+"|"+str(newhp)+"\/100 "+statusdict[parsed[1]]+"|[from] psn")
             elif " is buffeted by the sandstorm!" in line:
                 parsed = line.split(" is buffeted by the sandstorm!")[0].split("'s ")
                 isp1 = parsed[0] == p1name
@@ -90,7 +119,8 @@ def generateHTML(log, p1name, p2name, p1mons, p2mons):
                 hps = p1hps if isp1 else p2hps
                 newhp = max(hps[parsed[1]] - 6,0)
                 hps[parsed[1]] = newhp
-                out.append("|-damage|"+player+": "+parsed[1]+"|"+str(newhp)+"\/100|[from] Sandstorm")
+                statusdict = p1statuses if isp1 else p2statuses
+                out.append("|-damage|"+player+": "+parsed[1]+"|"+str(newhp)+"\/100 "+statusdict[parsed[1]]+"|[from] Sandstorm")
             elif " restored a little HP using its Leftovers!" in line:
                 parsed = line.split(" restored a little HP using its Leftovers!")[0].split("'s ")
                 isp1 = parsed[0] == p1name
@@ -98,16 +128,47 @@ def generateHTML(log, p1name, p2name, p1mons, p2mons):
                 hps = p1hps if isp1 else p2hps
                 newhp = min(hps[parsed[1]] + 6,100)
                 hps[parsed[1]] = newhp
-                out.append("|-heal|"+player+": "+parsed[1]+"|"+str(newhp)+"\/100|[from] item: Leftovers")
+                statusdict = p1statuses if isp1 else p2statuses
+                out.append("|-heal|"+player+": "+parsed[1]+"|"+str(newhp)+"\/100 "+statusdict[parsed[1]]+"|[from] item: Leftovers")
             elif "% of its health!" in line:
                 parsed = line.split("% of its health!")[0].split(" lost ")
                 parsedname = parsed[0].split("'s ")
                 isp1 = parsedname[0] == p1name
                 player = "p1a" if isp1 else "p2a"
                 hps = p1hps if isp1 else p2hps
-                newhp = max(hps[parsed[1]] - int(parsed[1]),0)
-                hps[parsed[1]] = newhp
-                out.append("|-damage|"+player+": "+parsedname[1]+"|"+str(newhp)+"\/100")
+                newhp = max(hps[parsedname[1]] - int(parsed[1]),0)
+                hps[parsedname[1]] = newhp
+                statusdict = p1statuses if isp1 else p2statuses
+                out.append("|-damage|"+player+": "+parsedname[1]+"|"+str(newhp)+"\/100 "+statusdict[parsedname[1]])
+            elif " is hurt by spikes!" in line:
+                parsed = line.split(" is hurt by spikes!")[0].split(" lost ")
+                parsedname = parsed[0].split("'s ")
+                isp1 = parsedname[0] == p1name
+                player = "p1a" if isp1 else "p2a"
+                hps = p1hps if isp1 else p2hps
+                newhp = max(hps[parsedname[1]] - 12,0)
+                hps[parsedname[1]] = newhp
+                statusdict = p1statuses if isp1 else p2statuses
+                out.append("|-damage|"+player+": "+parsedname[1]+"|"+str(newhp)+"\/100 "+statusdict[parsedname[1]])
+            elif " was dragged out!" in line:
+                parsed = line.split(" was dragged out!")
+                parsedname = parsed[0].split("'s ");
+                isp1 = parsedname[0] == p1name
+                player = "p1a" if isp1 else "p2a"
+                hpswitchedin = p1hps if isp1 else p2hps
+                statusswitchedin = p1statuses if isp1 else p2statuses
+                nickswitchedin = p1nicktospecies if isp1 else p2nicktospecies
+                monname = parsedname[1]
+                if isp1:
+                    p1active = nickswitchedin[monname]
+                    p1tox = 1
+                else:
+                    p2active = nickswitchedin[monname]
+                    p2tox = 1
+                out.append("|drag|"+player+": "+monname+"|"+nickswitchedin[monname]+"|"+str(hpswitchedin[monname])+"\/100 "+statusswitchedin[monname])
+
+
+
 
 
 
