@@ -8,6 +8,8 @@ def generateHTML(log, p1name, p2name, p1mons, p2mons):
     p2statuses = {mon[0]: "" for mon in p2mons}
     p1nicktospecies = {mon[0]: mon[1] for mon in p1mons}
     p2nicktospecies = {mon[0]: mon[1] for mon in p2mons}
+    p1active = p1mons[0][0]
+    p2active = p2mons[0][0]
     lines = log.split("\n")
     out = []
     out.append(
@@ -48,8 +50,20 @@ def generateHTML(log, p1name, p2name, p1mons, p2mons):
                 hpswitchedin = p1hps if isp1 else p2hps
                 statusswitchedin = p1statuses if isp1 else p2statuses
                 nickswitchedin = p1nicktospecies if isp1 else p2nicktospecies
+                if isp1:
+                    p1active = monname
+                else:
+                    p2active = monname
                 out.append("|switch|"+player+": "+monname+"|"+nickswitchedin[monname]+"|"+str(hpswitchedin[monname])+"\/100 "+statusswitchedin[monname])
-
+            elif " used " in line:
+                parsed = line.split(" used ")
+                parsedname = parsed[0].split("'s ")
+                parsedmove = parsed[1].split("!")
+                isp1 = parsedname[0] == p1name
+                player = "p1a" if isp1 else "p2a"
+                notplayer = "p1a" if not isp1 else "p2a"
+                target = p2active if isp1 else p1active
+                out.append("|move|"+player+": "+parsedname[1]+"|"+parsedmove[0]+"|"+notplayer+": "+target)
         except Exception as e:
             print("problem line:")
             print(line)
