@@ -34,6 +34,8 @@ def generateHTML(log, p1name, p2name, p1mons, p2mons):
 |start""")
     out.append("|switch|p1a: "+p1mons[0][0]+"|"+p1mons[0][1]+"|100\/100")
     out.append("|switch|p2a: "+p2mons[0][0]+"|"+p2mons[0][1]+"|100\/100")
+    if p1mons[0][1] == "Tyranitar" or p2mons[0][1] == "Tyranitar":
+        out.append("|-weather|Sandstorm")
     for line in lines:
         try:
             if "Start of turn " in line:
@@ -81,6 +83,33 @@ def generateHTML(log, p1name, p2name, p1mons, p2mons):
                     out.append("|-sidestart|p1: "+p1name+"|Spikes")
                 else:
                     out.append("|-sidestart|p2: "+p2name+"|Spikes")
+            elif " is buffeted by the sandstorm!" in line:
+                parsed = line.split(" is buffeted by the sandstorm!")[0].split("'s ")
+                isp1 = parsed[0] == p1name
+                player = "p1a" if isp1 else "p2a"
+                hps = p1hps if isp1 else p2hps
+                newhp = max(hps[parsed[1]] - 6,0)
+                hps[parsed[1]] = newhp
+                out.append("|-damage|"+player+": "+parsed[1]+"|"+str(newhp)+"\/100|[from] Sandstorm")
+            elif " restored a little HP using its Leftovers!" in line:
+                parsed = line.split(" restored a little HP using its Leftovers!")[0].split("'s ")
+                isp1 = parsed[0] == p1name
+                player = "p1a" if isp1 else "p2a"
+                hps = p1hps if isp1 else p2hps
+                newhp = min(hps[parsed[1]] + 6,100)
+                hps[parsed[1]] = newhp
+                out.append("|-heal|"+player+": "+parsed[1]+"|"+str(newhp)+"\/100|[from] item: Leftovers")
+            elif "% of its health!" in line:
+                parsed = line.split("% of its health!")[0].split(" lost ")
+                parsedname = parsed[0].split("'s ")
+                isp1 = parsedname[0] == p1name
+                player = "p1a" if isp1 else "p2a"
+                hps = p1hps if isp1 else p2hps
+                newhp = max(hps[parsed[1]] - int(parsed[1]),0)
+                hps[parsed[1]] = newhp
+                out.append("|-damage|"+player+": "+parsedname[1]+"|"+str(newhp)+"\/100")
+
+
 
 
         except Exception as e:
