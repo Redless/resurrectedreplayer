@@ -5,6 +5,11 @@ def generateHTML(log, p1name, p2name, p1mons, p2mons):
     p1hps = {mon[0]: 100 for mon in p1mons}
     p1tox = 1
     p2tox = 1
+    p1boosts = {"Special Attack":0,"Sp. Def.":0,"Defense":0,"Speed":0,"Attack":0}
+    p2boosts = {"Special Attack":0,"Sp. Def.":0,"Defense":0,"Speed":0,"Attack":0}
+    p1spikes = 0
+    p2spikes = 0
+    stat2abbrev = {"Special Attack":"spa","Sp. Def.":"spd","Defense":"def","Speed":"spe","Attack":"atk"}
     p1statuses = {mon[0]: "" for mon in p1mons}
     p2hps = {mon[0]: 100 for mon in p2mons}
     p2statuses = {mon[0]: "" for mon in p2mons}
@@ -57,9 +62,13 @@ def generateHTML(log, p1name, p2name, p1mons, p2mons):
                 if isp1:
                     p1active = monname
                     p1tox = 1
+                    for stat in p1boosts:
+                        p1boosts[stat] = 0
                 else:
                     p2active = monname
                     p2tox = 1
+                    for stat in p2boosts:
+                        p2boosts[stat] = 0
                 out.append("|switch|"+player+": "+monname+"|"+nickswitchedin[monname]+"|"+str(hpswitchedin[monname])+"\/100 "+statusswitchedin[monname])
             elif " used " in line:
                 parsed = line.split(" used ")
@@ -95,8 +104,10 @@ def generateHTML(log, p1name, p2name, p1mons, p2mons):
                 isp1 = target == p1name
                 if isp1:
                     out.append("|-sidestart|p1: "+p1name+"|Spikes")
+                    p1spikes = min(3,p1spikes + 1)
                 else:
                     out.append("|-sidestart|p2: "+p2name+"|Spikes")
+                    p2spikes = min(3,p2spikes + 1)
             elif " was hurt by poison!" in line:
                 parsed = line.split(" was hurt by poison!")[0].split("'s ")
                 isp1 = parsed[0] == p1name
@@ -146,7 +157,9 @@ def generateHTML(log, p1name, p2name, p1mons, p2mons):
                 isp1 = parsedname[0] == p1name
                 player = "p1a" if isp1 else "p2a"
                 hps = p1hps if isp1 else p2hps
-                newhp = max(hps[parsedname[1]] - 12,0)
+                numspikes = p1spikes if isp1 else p2spikes
+                spikesdamage = [0,12,17,25][numspikes] 
+                newhp = max(hps[parsedname[1]] - spikesdamage,0)
                 hps[parsedname[1]] = newhp
                 statusdict = p1statuses if isp1 else p2statuses
                 out.append("|-damage|"+player+": "+parsedname[1]+"|"+str(newhp)+"\/100 "+statusdict[parsedname[1]])
@@ -155,24 +168,56 @@ def generateHTML(log, p1name, p2name, p1mons, p2mons):
                 parsedname = parsed[0].split("'s ");
                 isp1 = parsedname[0] == p1name
                 player = "p1a" if isp1 else "p2a"
+                monname = parsedname[1]
+                nickswitchedin = p1nicktospecies if isp1 else p2nicktospecies
                 hpswitchedin = p1hps if isp1 else p2hps
                 statusswitchedin = p1statuses if isp1 else p2statuses
-                nickswitchedin = p1nicktospecies if isp1 else p2nicktospecies
-                monname = parsedname[1]
                 if isp1:
                     p1active = nickswitchedin[monname]
                     p1tox = 1
+                    for stat in p1boosts:
+                        p1boosts[stat] = 0
                 else:
                     p2active = nickswitchedin[monname]
                     p2tox = 1
+                    for stat in p2boosts:
+                        p2boosts[stat] = 0
                 out.append("|drag|"+player+": "+monname+"|"+nickswitchedin[monname]+"|"+str(hpswitchedin[monname])+"\/100 "+statusswitchedin[monname])
 
+            elif " rose!" in line:
+                parsed = line.split(" rose!")
+                parsedname = parsed[0].split("'s ");
+                isp1 = parsedname[0] == p1name
+                boostdict = p1boosts if isp1 else p2boosts
+                player = "p1a" if isp1 else "p2a"
+                boostdict[parsedname[2]]+=1
+                out.append("|-boost|"+player+": "+parsedname[1]+"|"+stat2abbrev[parsedname[2]]+"|"+str(boostdict[parsedname[2]]))
 
 
-
-
-
-
+            elif " fell!" in line:
+                parsed = line.split(" fell!")
+                parsedname = parsed[0].split("'s ");
+                isp1 = parsedname[0] == p1name
+                boostdict = p1boosts if isp1 else p2boosts
+                player = "p1a" if isp1 else "p2a"
+                boostdict[parsedname[2]]-=1
+                out.append("|-boost|"+player+": "+parsedname[1]+"|"+stat2abbrev[parsedname[2]]+"|"+str(boostdict[parsedname[2]]))
+            elif line == "A critical hit!":
+                out.append("|raw|A critical hit!")
+            elif " is fast asleep." in line:
+                parsed = line.split(" is fast asleep.")
+                parsedname = parsed[0].split("'s ")
+                isp1 = parsedname[0] == p1name
+                player = "p1a" if isp1 else "p2a"
+                out.append("|cant|"+player+": "+parsedname[1]+"|slp")
+            elif " fainted!" in line:
+                parsed = line.split(" fainted!")
+                parsedname = parsed[0].split("'s ")
+                isp1 = parsedname[0] == p1name
+                player = "p1a" if isp1 else "p2a"
+                out.append("|faint|"+player+": "+parsedname[1])
+            elif " won the battle!" in line:
+                out.append("|win|"+line.split(" won the battle!")[0])
         except Exception as e:
             print("problem line:")
             print(line)
