@@ -64,6 +64,25 @@ def generateHTML(log, p1name, p2name, p1mons, p2mons):
                 notplayer = "p1a" if not isp1 else "p2a"
                 target = p2active if isp1 else p1active
                 out.append("|move|"+player+": "+parsedname[1]+"|"+parsedmove[0]+"|"+notplayer+": "+target)
+            elif " fell asleep!" in line:
+                parsed = line.split(" fell asleep!")
+                parsed = parsed[0].split("'s ")
+                isp1 = parsed[0] == p1name
+                player = "p1a" if isp1 else "p2a"
+                if isp1:
+                    p1statuses[parsed[1]] = "slp"
+                else:
+                    p2statuses[parsed[1]] = "slp"
+                out.append("|-status|"+player+": "+parsed[1]+"|slp|")
+            elif "Spikes were scattered all around the feet of " in line:
+                target = line.split("Spikes were scattered all around the feet of ")[1].split("'s team!")[0]
+                isp1 = target == p1name
+                if isp1:
+                    out.append("|-sidestart|p1: "+p1name+"|Spikes")
+                else:
+                    out.append("|-sidestart|p2: "+p2name+"|Spikes")
+
+
         except Exception as e:
             print("problem line:")
             print(line)
