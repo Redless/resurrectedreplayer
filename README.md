@@ -1,3 +1,7 @@
+# What is this?
+
+This is a Pokemon log-to-replay converter. I made it in 5 hours for a youtuber I like, BKC. I don't maintain it and I'm not proud of the style (it's spaghetti code) so if you're an employer reading this, understand that.
+
 # What I did
 
 Created a script to automate M Dragon vs Floppy. All the stuff that happens in that match (spikes, sleep, toxic, stat raising/lowering, sandstorm, leftovers, moves doing damage) is implemented in the script, so it was able to parse that log into a replay.
@@ -5,7 +9,6 @@ Created a script to automate M Dragon vs Floppy. All the stuff that happens in t
 # Stuff I didn't implement
 
 -   "missing" doesn't use a different animation
--   "turns asleep" is not kept track of, nor is sleep animated
 -   "sandstorm" is not animated
 -   all the chats and talk of people joining/leaving the battle. I don't care about this stuff.
 -   fixed the weird speedup on turn 13ish
